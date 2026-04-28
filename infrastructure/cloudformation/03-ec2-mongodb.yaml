@@ -6,7 +6,6 @@ Parameters:
     Type: String
     Default: wiz-exercise
   
-  # We will generate a key pair manually and paste the name here
   KeyPairName:
     Type: String
     Description: Name of existing EC2 Key Pair for SSH access
@@ -22,15 +21,11 @@ Resources:
       GroupDescription: Security Group for MongoDB EC2 - Intentionally misconfigured
       VpcId: !ImportValue wiz-exercise-VPC
       SecurityGroupIngress:
-        # MISCONFIGURATION 1: SSH open to entire internet
-        # Any IP address can attempt to SSH into this server
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
           CidrIp: 0.0.0.0/0
           Description: SSH from anywhere - INTENTIONAL MISCONFIGURATION
-        # MongoDB port - we will restrict this to EKS later
-        # For now open to VPC only
         - IpProtocol: tcp
           FromPort: 27017
           ToPort: 27017
@@ -48,62 +43,33 @@ Resources:
   MongoDBInstance:
     Type: AWS::EC2::Instance
     Properties:
-      # MISCONFIGURATION 2: Outdated Ubuntu 20.04
-      # Ubuntu 20.04 has known unpatched CVEs
-      # Current recommended is Ubuntu 22.04 or 24.04
       ImageId: ami-0310483fb2b488153
-      
-      # t3.micro - small and cheap, fine for our exercise
       InstanceType: t3.micro
-      
-      # MISCONFIGURATION 3: Placed in public subnet
-      # Database servers should NEVER be in public subnets
-      SubnetId: !ImportValue wiz-exercise-PublicSubnet1
-      
-      # Attach our overpermissive IAM role
-      # MISCONFIGURATION 4: AdministratorAccess on EC2
       IamInstanceProfile: !ImportValue wiz-exercise-EC2InstanceProfile
-      
-      # SSH Key for access
       KeyName: !Ref KeyPairName
-      
-      # Give it a public IP so it's reachable from internet
-      # Combined with the public subnet = directly internet exposed
       NetworkInterfaces:
         - AssociatePublicIpAddress: true
           DeviceIndex: 0
           SubnetId: !ImportValue wiz-exercise-PublicSubnet1
           GroupSet:
             - !Ref MongoDBSecurityGroup
-
-      # User Data - runs automatically on first boot
-      # This installs outdated MongoDB 4.4 automatically
       UserData:
         Fn::Base64: |
           #!/bin/bash
-          # Update system
           apt-get update -y
-          
-          # Install required packages
           apt-get install -y gnupg curl awscli
-          
-          # MISCONFIGURATION: Installing outdated MongoDB 4.4
-          # Current version is 7.x - version 4.4 has known CVEs
+
           curl -fsSL https://www.mongodb.org/static/pgp/server-4.4.asc | apt-key add -
           echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/4.4 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-4.4.list
           apt-get update -y
           apt-get install -y mongodb-org=4.4.29 mongodb-org-server=4.4.29
-          
-          # Start MongoDB and enable on boot
+
           systemctl start mongod
           systemctl enable mongod
-          
-          # Configure MongoDB to accept connections
-          # Allow connections from within VPC
+
           sed -i 's/bindIp: 127.0.0.1/bindIp: 0.0.0.0/' /etc/mongod.conf
           systemctl restart mongod
-          
-          # Create database and user for Tasky application
+
           sleep 10
           mongosh --eval "
             use taskydb;
@@ -113,37 +79,23 @@ Resources:
               roles: [{ role: 'readWrite', db: 'taskydb' }]
             });
           "
-          
-          # Create backup script directory
+
           mkdir -p /opt/backup
-          
-          # Write backup script
+
           cat > /opt/backup/mongodb-backup.sh << 'EOF'
           #!/bin/bash
           TIMESTAMP=$(date +%Y%m%d_%H%M%S)
           BACKUP_DIR=/tmp/mongodb-backup-$TIMESTAMP
           BUCKET_NAME=$(aws ssm get-parameter --name /wiz-exercise/bucket-name --query Parameter.Value --output text --region ap-southeast-2)
-          
-          # Create backup
           mongodump --out=$BACKUP_DIR
-          
-          # Compress backup
           tar -czf /tmp/backup-$TIMESTAMP.tar.gz -C /tmp mongodb-backup-$TIMESTAMP
-          
-          # Upload to S3 - public bucket
           aws s3 cp /tmp/backup-$TIMESTAMP.tar.gz s3://$BUCKET_NAME/backups/backup-$TIMESTAMP.tar.gz
-          
-          # Cleanup
           rm -rf $BACKUP_DIR
           rm -f /tmp/backup-$TIMESTAMP.tar.gz
           EOF
-          
+
           chmod +x /opt/backup/mongodb-backup.sh
-          
-          # Schedule backup every hour via cron
           echo "0 * * * * root /opt/backup/mongodb-backup.sh" >> /etc/crontab
-          
-          # Signal completion
           echo "MongoDB setup complete" > /var/log/wiz-exercise-setup.log
 
       Tags:
