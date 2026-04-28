@@ -1,0 +1,77 @@
+name: Deploy Infrastructure
+
+# Triggers when you push changes to CloudFormation templates
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'infrastructure/cloudformation/**'
+  workflow_dispatch: # Also allows manual trigger from GitHub UI
+
+permissions:
+  id-token: write   # Required for OIDC authentication
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy CloudFormation Stacks
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1 - Check out the code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2 - Authenticate to AWS using OIDC
+      # No static credentials stored anywhere - security best practice
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::557595314694:role/github-actions-wiz-exercise
+          aws-region: ap-southeast-2
+
+      # Step 3 - Verify AWS connection
+      - name: Verify AWS identity
+        run: aws sts get-caller-identity
+
+      # Step 4 - Deploy VPC stack
+      - name: Deploy VPC Stack
+        run: |
+          aws cloudformation deploy \
+            --template-file infrastructure/cloudformation/01-vpc.yaml \
+            --stack-name wiz-exercise-vpc \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --region ap-southeast-2 \
+            --no-fail-on-empty-changeset
+
+      # Step 5 - Deploy IAM stack
+      - name: Deploy IAM Stack
+        run: |
+          aws cloudformation deploy \
+            --template-file infrastructure/cloudformation/02-iam.yaml \
+            --stack-name wiz-exercise-iam \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --region ap-southeast-2 \
+            --no-fail-on-empty-changeset
+
+      # Step 6 - Deploy S3 stack
+      - name: Deploy S3 Stack
+        run: |
+          aws cloudformation deploy \
+            --template-file infrastructure/cloudformation/04-s3.yaml \
+            --stack-name wiz-exercise-s3 \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --region ap-southeast-2 \
+            --no-fail-on-empty-changeset
+
+      # Step 7 - Summary
+      - name: Deployment Summary
+        run: |
+          echo "=========================================="
+          echo "Infrastructure deployment complete"
+          echo "Stacks deployed:"
+          echo "  - wiz-exercise-vpc"
+          echo "  - wiz-exercise-iam"
+          echo "  - wiz-exercise-s3"
+          echo "=========================================="
