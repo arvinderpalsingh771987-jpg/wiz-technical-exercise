@@ -1,0 +1,88 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Wiz Technical Exercise - S3 Bucket for Database Backups'
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: wiz-exercise
+
+Resources:
+
+  # S3 Bucket - Intentionally Misconfigured
+  # MISCONFIGURATION: Public read access on a bucket
+  # containing database backups with sensitive data
+  DatabaseBackupBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      # Bucket name must be globally unique across all of AWS
+      BucketName: !Sub ${EnvironmentName}-db-backups-${AWS::AccountId}
+      
+      # MISCONFIGURATION: Turning off all public access blocks
+      # This is the safety net AWS provides - we're disabling it
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+      # Enable versioning - so we can see backup history
+      VersioningConfiguration:
+        Status: Enabled
+
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-db-backups
+        - Key: Exercise
+          Value: Wiz Technical Exercise
+        - Key: Misconfiguration
+          Value: Public read access on bucket containing DB backups
+
+  # Bucket Policy - Explicitly allows public read
+  # This is what actually makes files downloadable without auth
+  DatabaseBackupBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref DatabaseBackupBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          # MISCONFIGURATION: s3:GetObject allowed for everyone
+          # Principal: "*" means any person or system on the internet
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: "*"
+            Action:
+              - s3:GetObject
+              - s3:ListBucket
+            Resource:
+              - !GetAtt DatabaseBackupBucket.Arn
+              - !Sub ${DatabaseBackupBucket.Arn}/*
+
+  # SSM Parameter to store bucket name
+  # Our backup script on EC2 reads this to know where to upload
+  BucketNameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /wiz-exercise/bucket-name
+      Type: String
+      Value: !Ref DatabaseBackupBucket
+      Description: S3 bucket name for MongoDB backups
+
+Outputs:
+  BucketName:
+    Description: S3 Bucket Name
+    Value: !Ref DatabaseBackupBucket
+    Export:
+      Name: !Sub ${EnvironmentName}-BucketName
+
+  BucketArn:
+    Description: S3 Bucket ARN
+    Value: !GetAtt DatabaseBackupBucket.Arn
+    Export:
+      Name: !Sub ${EnvironmentName}-BucketArn
+
+  BucketURL:
+    Description: S3 Bucket URL
+    Value: !Sub https://${DatabaseBackupBucket}.s3.ap-southeast-2.amazonaws.com
+    Export:
+      Name: !Sub ${EnvironmentName}-BucketURL
