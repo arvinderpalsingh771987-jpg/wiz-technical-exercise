@@ -1,0 +1,48 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Wiz Technical Exercise - IAM Roles'
+
+Resources:
+
+  # IAM Role for EC2 - Intentionally Overpermissive
+  # MISCONFIGURATION: AdministratorAccess on an EC2 instance
+  # gives any attacker who compromises this machine full
+  # control of the entire AWS account via the metadata service
+  EC2InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: wiz-exercise-ec2-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+      Tags:
+        - Key: Name
+          Value: wiz-exercise-ec2-role
+        - Key: MisconfigurationIntent
+          Value: Overpermissive IAM role for Wiz exercise
+
+  # Instance Profile - wrapper that attaches role to EC2
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: wiz-exercise-ec2-profile
+      Roles:
+        - !Ref EC2InstanceRole
+
+Outputs:
+  EC2InstanceProfile:
+    Description: EC2 Instance Profile ARN
+    Value: !Ref EC2InstanceProfile
+    Export:
+      Name: wiz-exercise-EC2InstanceProfile
+
+  EC2InstanceRole:
+    Description: EC2 Instance Role ARN
+    Value: !GetAtt EC2InstanceRole.Arn
+    Export:
+      Name: wiz-exercise-EC2InstanceRole
