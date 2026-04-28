@@ -64,10 +64,6 @@ Resources:
       # MISCONFIGURATION 4: AdministratorAccess on EC2
       IamInstanceProfile: !ImportValue wiz-exercise-EC2InstanceProfile
       
-      # Attach security group
-      SecurityGroupIds:
-        - !Ref MongoDBSecurityGroup
-      
       # SSH Key for access
       KeyName: !Ref KeyPairName
       
