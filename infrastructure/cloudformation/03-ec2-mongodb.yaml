@@ -57,20 +57,33 @@ Resources:
         Fn::Base64: |
           #!/bin/bash
           apt-get update -y
-          apt-get install -y gnupg curl awscli
+          apt-get install -y gnupg curl awscli wget
 
+          # Install libssl1.1 manually
+          # MongoDB 4.4 requires libssl1.1 which was removed in Ubuntu 22.04
+          # This is a perfect example of dependency debt from outdated software
+          wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb
+          dpkg -i libssl1.1_1.1.1f-1ubuntu2_amd64.deb
+
+          # Install outdated MongoDB 4.4 - INTENTIONAL MISCONFIGURATION
+          # Current version is 7.x - version 4.4 has known CVEs
           curl -fsSL https://www.mongodb.org/static/pgp/server-4.4.asc | apt-key add -
           echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/4.4 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-4.4.list
           apt-get update -y
           apt-get install -y mongodb-org=4.4.29 mongodb-org-server=4.4.29
 
+          # Start and enable MongoDB
           systemctl start mongod
           systemctl enable mongod
 
+          # Allow connections from within VPC - not just localhost
           sed -i 's/bindIp: 127.0.0.1/bindIp: 0.0.0.0/' /etc/mongod.conf
           systemctl restart mongod
 
-          sleep 10
+          # Wait for MongoDB to fully start
+          sleep 15
+
+          # Create database and user for Tasky application
           mongosh --eval "
             use taskydb;
             db.createUser({
@@ -80,8 +93,10 @@ Resources:
             });
           "
 
+          # Create backup script directory
           mkdir -p /opt/backup
 
+          # Write backup script
           cat > /opt/backup/mongodb-backup.sh << 'EOF'
           #!/bin/bash
           TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -95,7 +110,11 @@ Resources:
           EOF
 
           chmod +x /opt/backup/mongodb-backup.sh
+
+          # Schedule backup every hour
           echo "0 * * * * root /opt/backup/mongodb-backup.sh" >> /etc/crontab
+
+          # Log completion
           echo "MongoDB setup complete" > /var/log/wiz-exercise-setup.log
 
       Tags:
