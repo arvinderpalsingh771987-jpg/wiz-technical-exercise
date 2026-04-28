@@ -1,0 +1,60 @@
+name: Build and Push Container
+
+# Triggers when you push changes to Tasky application code
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'application/tasky/**'
+  workflow_dispatch: # Also allows manual trigger from GitHub UI
+
+permissions:
+  id-token: write   # Required for OIDC authentication
+  contents: read
+
+jobs:
+  build:
+    name: Build and Push to ECR
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1 - Check out the code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2 - Authenticate to AWS using OIDC
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::557595314694:role/github-actions-wiz-exercise
+          aws-region: ap-southeast-2
+
+      # Step 3 - Authenticate Docker to ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      # Step 4 - Build the Docker image
+      # Note: wizexercise.txt must exist in application/tasky/
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t 557595314694.dkr.ecr.ap-southeast-2.amazonaws.com/wiz-exercise-tasky:latest \
+            -t 557595314694.dkr.ecr.ap-southeast-2.amazonaws.com/wiz-exercise-tasky:${{ github.sha }} \
+            ./application/tasky
+
+      # Step 5 - Push to ECR
+      - name: Push to ECR
+        run: |
+          docker push 557595314694.dkr.ecr.ap-southeast-2.amazonaws.com/wiz-exercise-tasky:latest
+          docker push 557595314694.dkr.ecr.ap-southeast-2.amazonaws.com/wiz-exercise-tasky:${{ github.sha }}
+
+      # Step 6 - Summary
+      - name: Build Summary
+        run: |
+          echo "=========================================="
+          echo "Container build and push complete"
+          echo "Image: 557595314694.dkr.ecr.ap-southeast-2.amazonaws.com/wiz-exercise-tasky"
+          echo "Tags: latest, ${{ github.sha }}"
+          echo "=========================================="
