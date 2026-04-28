@@ -95,8 +95,8 @@ Resources:
       NodegroupName: wiz-exercise-nodegroup
       NodeRole: !GetAtt EKSNodeRole.Arn
       Subnets:
-        - !ImportValue wiz-exercise-PrivateSubnet1
-        - !ImportValue wiz-exercise-PrivateSubnet2
+        - !ImportValue wiz-exercise-PublicSubnet1
+        - !ImportValue wiz-exercise-PublicSubnet2
       InstanceTypes:
         - t3.medium
       ScalingConfig:
