@@ -40,7 +40,7 @@ jobs:
         run: |
           aws cloudformation deploy \
             --template-file infrastructure/cloudformation/01-vpc.yaml \
-            --stack-name wiz-exercise-vpc \
+            --stack-name cloud-security-vpc \
             --capabilities CAPABILITY_NAMED_IAM \
             --region ap-southeast-2 \
             --no-fail-on-empty-changeset
@@ -50,7 +50,7 @@ jobs:
         run: |
           aws cloudformation deploy \
             --template-file infrastructure/cloudformation/02-iam.yaml \
-            --stack-name wiz-exercise-iam \
+            --stack-name cloud-security-iam \
             --capabilities CAPABILITY_NAMED_IAM \
             --region ap-southeast-2 \
             --no-fail-on-empty-changeset
@@ -60,7 +60,7 @@ jobs:
         run: |
           aws cloudformation deploy \
             --template-file infrastructure/cloudformation/04-s3.yaml \
-            --stack-name wiz-exercise-s3 \
+            --stack-name cloud-security-s3 \
             --capabilities CAPABILITY_NAMED_IAM \
             --region ap-southeast-2 \
             --no-fail-on-empty-changeset
@@ -71,7 +71,7 @@ jobs:
           echo "=========================================="
           echo "Infrastructure deployment complete"
           echo "Stacks deployed:"
-          echo "  - wiz-exercise-vpc"
-          echo "  - wiz-exercise-iam"
-          echo "  - wiz-exercise-s3"
+          echo "  - cloud-security-vpc"
+          echo "  - cloud-security-iam"
+          echo "  - cloud-security-s3"
           echo "=========================================="
