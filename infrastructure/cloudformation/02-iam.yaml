@@ -24,7 +24,7 @@ Resources:
         - Key: Name
           Value: cloud-security-lab-ec2-role
         - Key: MisconfigurationIntent
-          Value: Overpermissive IAM role for Wiz exercise
+          Value: Overpermissive IAM role for cloud-security-lab exercise
 
   # Instance Profile - wrapper that attaches role to EC2
   EC2InstanceProfile:
