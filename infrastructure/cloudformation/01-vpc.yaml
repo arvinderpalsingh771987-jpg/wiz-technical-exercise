@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Wiz Technical Exercise - VPC and Networking'
+Description: 'Cloud Security Technical Exercise - VPC and Networking'
 
 Parameters:
   EnvironmentName:
