@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Cloud Security Technical Exercise - IAM Roles'
+Description: 'Cloud Security Lab - IAM Roles'
 
 Resources:
 
@@ -10,7 +10,7 @@ Resources:
   EC2InstanceRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: cloud-security-lab-ec2-role
+      RoleName: cloud-security-ec2-role
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -22,15 +22,15 @@ Resources:
         - arn:aws:iam::aws:policy/AdministratorAccess
       Tags:
         - Key: Name
-          Value: cloud-security-lab-ec2-role
+          Value: cloud-security-ec2-role
         - Key: MisconfigurationIntent
-          Value: Overpermissive IAM role for cloud-security-lab exercise
+          Value: Overpermissive IAM role - intentional for security lab
 
   # Instance Profile - wrapper that attaches role to EC2
   EC2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
-      InstanceProfileName: cloud-security-lab-ec2-profile
+      InstanceProfileName: cloud-security-ec2-profile
       Roles:
         - !Ref EC2InstanceRole
 
@@ -39,10 +39,10 @@ Outputs:
     Description: EC2 Instance Profile ARN
     Value: !Ref EC2InstanceProfile
     Export:
-      Name: cloud-security-lab-EC2InstanceProfile
+      Name: cloud-security-EC2InstanceProfile
 
   EC2InstanceRole:
     Description: EC2 Instance Role ARN
     Value: !GetAtt EC2InstanceRole.Arn
     Export:
-      Name: cloud-security-lab-EC2InstanceRole
+      Name: cloud-security-EC2InstanceRole
