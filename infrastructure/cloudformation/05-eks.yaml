@@ -1,10 +1,10 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Wiz Technical Exercise - EKS Cluster'
+Description: 'Cloud Security Lab - EKS Cluster'
 
 Parameters:
   EnvironmentName:
     Type: String
-    Default: wiz-exercise
+    Default: cloud-security
 
 Resources:
 
@@ -12,7 +12,7 @@ Resources:
   EKSClusterRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: wiz-exercise-eks-cluster-role
+      RoleName: cloud-security-eks-cluster-role
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -24,13 +24,13 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
       Tags:
         - Key: Name
-          Value: wiz-exercise-eks-cluster-role
+          Value: cloud-security-eks-cluster-role
 
   # IAM Role for EKS Worker Nodes
   EKSNodeRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: wiz-exercise-eks-node-role
+      RoleName: cloud-security-eks-node-role
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -44,15 +44,15 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
       Tags:
         - Key: Name
-          Value: wiz-exercise-eks-node-role
+          Value: cloud-security-eks-node-role
 
   # Security Group for EKS Cluster
   EKSClusterSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: wiz-exercise-eks-sg
+      GroupName: cloud-security-eks-sg
       GroupDescription: Security Group for EKS Cluster
-      VpcId: !ImportValue wiz-exercise-VPC
+      VpcId: !ImportValue cloud-security-VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 443
@@ -65,38 +65,40 @@ Resources:
           Description: All outbound traffic
       Tags:
         - Key: Name
-          Value: wiz-exercise-eks-sg
+          Value: cloud-security-eks-sg
 
   # EKS Cluster
   EKSCluster:
     Type: AWS::EKS::Cluster
     Properties:
-      Name: wiz-exercise-cluster
+      Name: cloud-security-cluster
       Version: '1.28'
       RoleArn: !GetAtt EKSClusterRole.Arn
       ResourcesVpcConfig:
         SubnetIds:
-          - !ImportValue wiz-exercise-PrivateSubnet1
-          - !ImportValue wiz-exercise-PrivateSubnet2
+          - !ImportValue cloud-security-PrivateSubnet1
+          - !ImportValue cloud-security-PrivateSubnet2
         SecurityGroupIds:
           - !Ref EKSClusterSecurityGroup
         EndpointPublicAccess: true
         EndpointPrivateAccess: true
       Tags:
         - Key: Name
-          Value: wiz-exercise-cluster
+          Value: cloud-security-cluster
 
   # EKS Node Group - Worker Nodes
+  # Note: Using public subnets because no NAT Gateway in this lab
+  # In production worker nodes should always be in private subnets
   EKSNodeGroup:
     Type: AWS::EKS::Nodegroup
     DependsOn: EKSCluster
     Properties:
       ClusterName: !Ref EKSCluster
-      NodegroupName: wiz-exercise-nodegroup
+      NodegroupName: cloud-security-nodegroup
       NodeRole: !GetAtt EKSNodeRole.Arn
       Subnets:
-        - !ImportValue wiz-exercise-PublicSubnet1
-        - !ImportValue wiz-exercise-PublicSubnet2
+        - !ImportValue cloud-security-PublicSubnet1
+        - !ImportValue cloud-security-PublicSubnet2
       InstanceTypes:
         - t3.medium
       ScalingConfig:
@@ -105,7 +107,7 @@ Resources:
         DesiredSize: 2
       AmiType: AL2_x86_64
       Tags:
-        Name: wiz-exercise-nodegroup
+        Name: cloud-security-nodegroup
 
 Outputs:
   EKSClusterName:
