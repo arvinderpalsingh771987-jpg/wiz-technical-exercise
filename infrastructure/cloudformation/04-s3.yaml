@@ -1,10 +1,10 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Wiz Technical Exercise - S3 Bucket for Database Backups'
+Description: 'Cloud Security Lab - S3 Bucket for Database Backups'
 
 Parameters:
   EnvironmentName:
     Type: String
-    Default: wiz-exercise
+    Default: cloud-security
 
 Resources:
 
@@ -16,9 +16,9 @@ Resources:
     Properties:
       # Bucket name must be globally unique across all of AWS
       BucketName: !Sub ${EnvironmentName}-db-backups-${AWS::AccountId}
-      
+
       # MISCONFIGURATION: Turning off all public access blocks
-      # This is the safety net AWS provides - we're disabling it
+      # This is the safety net AWS provides - we are disabling it
       PublicAccessBlockConfiguration:
         BlockPublicAcls: false
         BlockPublicPolicy: false
@@ -33,7 +33,7 @@ Resources:
         - Key: Name
           Value: !Sub ${EnvironmentName}-db-backups
         - Key: Exercise
-          Value: Wiz Technical Exercise
+          Value: Cloud Security Lab
         - Key: Misconfiguration
           Value: Public read access on bucket containing DB backups
 
@@ -63,7 +63,7 @@ Resources:
   BucketNameParameter:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: /wiz-exercise/bucket-name
+      Name: /cloud-security/bucket-name
       Type: String
       Value: !Ref DatabaseBackupBucket
       Description: S3 bucket name for MongoDB backups
