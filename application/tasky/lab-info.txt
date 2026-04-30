@@ -1,0 +1,4 @@
+Cloud Security Lab - Three Tier Security Demo
+Built by: Arvinder Pal Singh
+Architecture: EKS + MongoDB + S3
+Purpose: Demonstrating cloud security misconfigurations and attack paths
