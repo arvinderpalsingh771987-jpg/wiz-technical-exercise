@@ -1,11 +1,11 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Cloud Security Technical Exercise - VPC and Networking'
+Description: 'Cloud Security Lab - VPC and Networking'
 
 Parameters:
   EnvironmentName:
     Description: Environment name prefixed to resource names
     Type: String
-    Default: cloud-security-demo
+    Default: cloud-security
 
 Resources:
 
