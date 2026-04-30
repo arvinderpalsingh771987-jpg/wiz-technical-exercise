@@ -1,4 +1,0 @@
-Wiz Technical Exercise - Built by Arvinder Pal Singh 
-Three-tier vulnerable web application on AWS 
-Components: EKS + MongoDB + S3 
-Security findings: Public S3, Overpermissive IAM, SSH exposed, Outdated MongoDB 
