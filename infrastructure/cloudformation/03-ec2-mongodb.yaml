@@ -1,15 +1,15 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Wiz Technical Exercise - EC2 Instance with MongoDB'
+Description: 'Cloud Security Lab - EC2 Instance with MongoDB'
 
 Parameters:
   EnvironmentName:
     Type: String
-    Default: wiz-exercise
-  
+    Default: cloud-security
+
   KeyPairName:
     Type: String
     Description: Name of existing EC2 Key Pair for SSH access
-    Default: wiz-exercise-keypair
+    Default: cloud-security-keypair
 
 Resources:
 
@@ -17,9 +17,9 @@ Resources:
   MongoDBSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: wiz-exercise-mongodb-sg
+      GroupName: cloud-security-mongodb-sg
       GroupDescription: Security Group for MongoDB EC2 - Intentionally misconfigured
-      VpcId: !ImportValue wiz-exercise-VPC
+      VpcId: !ImportValue cloud-security-VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
@@ -45,12 +45,12 @@ Resources:
     Properties:
       ImageId: ami-0310483fb2b488153
       InstanceType: t3.micro
-      IamInstanceProfile: !ImportValue wiz-exercise-EC2InstanceProfile
+      IamInstanceProfile: !ImportValue cloud-security-EC2InstanceProfile
       KeyName: !Ref KeyPairName
       NetworkInterfaces:
         - AssociatePublicIpAddress: true
           DeviceIndex: 0
-          SubnetId: !ImportValue wiz-exercise-PublicSubnet1
+          SubnetId: !ImportValue cloud-security-PublicSubnet1
           GroupSet:
             - !Ref MongoDBSecurityGroup
       UserData:
@@ -84,12 +84,12 @@ Resources:
           sleep 15
 
           # Create database and user for Tasky application
-          mongosh --eval "
-            use taskydb;
+          mongo --eval "
+            use go-mongodb;
             db.createUser({
               user: 'taskyuser',
               pwd: 'taskypassword123',
-              roles: [{ role: 'readWrite', db: 'taskydb' }]
+              roles: [{ role: 'readWrite', db: 'go-mongodb' }]
             });
           "
 
@@ -101,7 +101,7 @@ Resources:
           #!/bin/bash
           TIMESTAMP=$(date +%Y%m%d_%H%M%S)
           BACKUP_DIR=/tmp/mongodb-backup-$TIMESTAMP
-          BUCKET_NAME=$(aws ssm get-parameter --name /wiz-exercise/bucket-name --query Parameter.Value --output text --region ap-southeast-2)
+          BUCKET_NAME=$(aws ssm get-parameter --name /cloud-security/bucket-name --query Parameter.Value --output text --region ap-southeast-2)
           mongodump --out=$BACKUP_DIR
           tar -czf /tmp/backup-$TIMESTAMP.tar.gz -C /tmp mongodb-backup-$TIMESTAMP
           aws s3 cp /tmp/backup-$TIMESTAMP.tar.gz s3://$BUCKET_NAME/backups/backup-$TIMESTAMP.tar.gz
@@ -115,13 +115,13 @@ Resources:
           echo "0 * * * * root /opt/backup/mongodb-backup.sh" >> /etc/crontab
 
           # Log completion
-          echo "MongoDB setup complete" > /var/log/wiz-exercise-setup.log
+          echo "MongoDB setup complete" > /var/log/cloud-security-setup.log
 
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName}-mongodb-vm
         - Key: Exercise
-          Value: Wiz Technical Exercise
+          Value: Cloud Security Lab
         - Key: Misconfiguration
           Value: Outdated OS, Outdated MongoDB, Public Subnet, Overpermissive IAM
 
